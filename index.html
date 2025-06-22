@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Basit Dil ve Karakter Seçme</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#222; color:#eee; text-align:center; padding: 20px; }
+  #gameScreen { display:none; margin-top: 30px; }
+  button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<h1 id="title">Dil Seçiniz / Select Language</h1>
+
+<div id="languageSelection">
+  <button onclick="selectLanguage('tr')">Türkçe</button>
+  <button onclick="selectLanguage('en')">English</button>
+  <button onclick="selectLanguage('es')">Español</button>
+</div>
+
+<div id="characterSelection" style="display:none;">
+  <h2 id="chooseCharacterTitle">Karakter Seç / Choose Character</h2>
+  <button onclick="selectCharacter('Eymen')">Eymen</button>
+  <button onclick="selectCharacter('Cem')">Cem</button>
+  <button onclick="selectCharacter('Ahmet')">Ahmet</button>
+</div>
+
+<div id="gameScreen">
+  <h2 id="welcomeText"></h2>
+  <p id="gameMessage"></p>
+  <button onclick="restart()">Yeniden Başlat / Restart</button>
+</div>
+
+<script>
+  const texts = {
+    tr: {
+      title: "Dil Seçiniz",
+      chooseCharacter: "Karakter Seç",
+      welcome: (name) => `Hoşgeldin, ${name}!`,
+      messages: {
+        Eymen: "Şimdi sizin ananızı laciverte boyaymıyım mı haahahha",
+        Cem: "Vay yara bandı düşmanı!",
+        Ahmet: "Düşmanları top yapcam!"
+      },
+      restart: "Yeniden Başlat"
+    },
+    en: {
+      title: "Select Language",
+      chooseCharacter: "Choose Character",
+      welcome: (name) => `Welcome, ${name}!`,
+      messages: {
+        Eymen: "Shall I paint your mother navy blue? hahaha",
+        Cem: "Wow, bandage enemy!",
+        Ahmet: "I'm gonna ball the enemies!"
+      },
+      restart: "Restart"
+    },
+    es: {
+      title: "Selecciona idioma",
+      chooseCharacter: "Elige personaje",
+      welcome: (name) => `¡Bienvenido, ${name}!`,
+      messages: {
+        Eymen: "¿Debo pintar a tu madre de azul marino? jajaja",
+        Cem: "¡Vaya enemigo con vendaje!",
+        Ahmet: "¡Voy a convertir a los enemigos en bolas!"
+      },
+      restart: "Reiniciar"
+    }
+  };
+
+  let selectedLang = null;
+  let selectedCharacter = null;
+
+  function selectLanguage(lang) {
+    selectedLang = lang;
+    document.getElementById('title').textContent = texts[lang].title;
+    document.getElementById('languageSelection').style.display = 'none';
+
+    // Karakter seçimini göster
+    document.getElementById('characterSelection').style.display = 'block';
+    document.getElementById('chooseCharacterTitle').textContent = texts[lang].chooseCharacter;
+  }
+
+  function selectCharacter(name) {
+    selectedCharacter = name;
+
+    // Karakter seçimini gizle, oyun ekranını göster
+    document.getElementById('characterSelection').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'block';
+
+    // Hoşgeldin yazısı
+    document.getElementById('welcomeText').textContent = texts[selectedLang].welcome(name);
+
+    // Karaktere özel mesaj
+    document.getElementById('gameMessage').textContent = texts[selectedLang].messages[name];
+
+    // Restart buton yazısı
+    document.querySelector('#gameScreen button').textContent = texts[selectedLang].restart;
+  }
+
+  function restart() {
+    // Her şeyi başa al
+    selectedLang = null;
+    selectedCharacter = null;
+
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('characterSelection').style.display = 'none';
+    document.getElementById('languageSelection').style.display = 'block';
+
+    document.getElementById('title').textContent = "Dil Seçiniz / Select Language";
+  }
+</script>
+
+</body>
+</html>
