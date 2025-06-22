@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Basit Savaş Oyunu</title>
+<title>Savaş Oyunu</title>
 <style>
   body {
     margin: 0; background: #111; color: white; font-family: Arial, sans-serif; text-align:center;
@@ -14,29 +14,26 @@
     display: flex; justify-content:center; align-items:center; font-size: 60px;
     z-index: 1000; color: red; display:none;
   }
-  #gameArea {
-    margin-top: 20px;
-  }
-  #languageSelection, #characterSelection, #gameScreen {
+  #container > div {
     margin-top: 20px;
   }
   button {
     font-size: 18px; margin: 8px; padding: 10px 20px; cursor:pointer;
   }
-  #info {
-    margin-top: 15px; font-size: 18px; min-height: 24px;
-  }
-  #healthBar {
+  #healthBar, #enemyHealthBar {
     width: 300px; height: 25px; background: red; margin: 10px auto;
     border-radius: 5px; overflow: hidden;
   }
-  #healthFill {
+  #healthFill, #enemyHealthFill {
     height: 100%; background: limegreen; width: 100%;
   }
-  #enemy {
-    width: 50px; height: 50px; background: crimson; margin: 20px auto;
-    border-radius: 10px;
-    position: relative;
+  #info {
+    margin-top: 15px; font-size: 18px; min-height: 24px;
+  }
+  #enemyBox {
+    width: 100px; height: 100px; margin: 20px auto;
+    background: crimson; border-radius: 10px;
+    line-height: 100px; font-weight: bold; font-size: 20px;
   }
 </style>
 </head>
@@ -44,26 +41,38 @@
 
 <h1 id="title">Dil Seçiniz / Select Language</h1>
 
-<div id="languageSelection">
-  <button onclick="selectLanguage('tr')">Türkçe</button>
-  <button onclick="selectLanguage('en')">English</button>
-  <button onclick="selectLanguage('es')">Español</button>
-</div>
+<div id="container">
 
-<div id="characterSelection" style="display:none;">
-  <h2 id="chooseCharacterTitle">Karakter Seç / Choose Character</h2>
-  <button onclick="selectCharacter('Eymen')">Eymen</button>
-  <button onclick="selectCharacter('Cem')">Cem</button>
-  <button onclick="selectCharacter('Ahmet')">Ahmet</button>
-</div>
+  <div id="languageSelection">
+    <button onclick="selectLanguage('tr')">Türkçe</button>
+    <button onclick="selectLanguage('en')">English</button>
+    <button onclick="selectLanguage('es')">Español</button>
+  </div>
 
-<div id="gameScreen" style="display:none;">
-  <h2 id="welcomeText"></h2>
-  <div id="healthBar"><div id="healthFill"></div></div>
-  <div id="enemy"></div>
-  <button id="attackBtn">Ateş Et / Shoot</button>
-  <div id="info"></div>
-  <button onclick="restart()" style="margin-top:20px;">Yeniden Başlat / Restart</button>
+  <div id="characterSelection" style="display:none;">
+    <h2 id="chooseCharacterTitle">Karakter Seç / Choose Character</h2>
+    <button onclick="selectCharacter('Eymen')">Eymen</button>
+    <button onclick="selectCharacter('Cem')">Cem</button>
+    <button onclick="selectCharacter('Ahmet')">Ahmet</button>
+  </div>
+
+  <div id="gameScreen" style="display:none;">
+    <h2 id="welcomeText"></h2>
+    
+    <div>Senin Canın:</div>
+    <div id="healthBar"><div id="healthFill"></div></div>
+
+    <div>Düşman Canı:</div>
+    <div id="enemyHealthBar"><div id="enemyHealthFill"></div></div>
+
+    <div id="enemyBox">Düşman</div>
+
+    <button id="attackBtn">Ateş Et / Shoot</button>
+    <div id="info"></div>
+
+    <button onclick="restart()" style="margin-top:20px;">Yeniden Başlat / Restart</button>
+  </div>
+
 </div>
 
 <div id="overlay">ÖLDÜN</div>
@@ -84,7 +93,9 @@
       },
       attackBtn: "Ateş Et",
       diedText: "ÖLDÜN",
-      restart: "Yeniden Başlat"
+      restart: "Yeniden Başlat",
+      enemyAttackInfo: "Düşman sana {dmg} hasar verdi!",
+      playerAttackInfo: "Düşmana {dmg} hasar verdin!"
     },
     en: {
       title: "Select Language",
@@ -97,7 +108,9 @@
       },
       attackBtn: "Shoot",
       diedText: "YOU DIED",
-      restart: "Restart"
+      restart: "Restart",
+      enemyAttackInfo: "Enemy dealt you {dmg} damage!",
+      playerAttackInfo: "You dealt {dmg} damage to enemy!"
     },
     es: {
       title: "Selecciona idioma",
@@ -110,7 +123,9 @@
       },
       attackBtn: "Disparar",
       diedText: "MORISTE",
-      restart: "Reiniciar"
+      restart: "Reiniciar",
+      enemyAttackInfo: "¡El enemigo te hizo {dmg} de daño!",
+      playerAttackInfo: "¡Le hiciste {dmg} de daño al enemigo!"
     }
   };
 
@@ -133,81 +148,4 @@
     document.getElementById('chooseCharacterTitle').textContent = texts[lang].chooseCharacter;
   }
 
-  function selectCharacter(name) {
-    selectedCharacter = name;
-
-    document.getElementById('characterSelection').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'block';
-
-    document.getElementById('welcomeText').textContent = texts[selectedLang].welcome(name);
-    document.getElementById('attackBtn').textContent = texts[selectedLang].attackBtn;
-    document.getElementById('info').textContent = texts[selectedLang].messages[name];
-    updateHealthBar();
-
-    enemyHealth = 100;
-    playerHealth = 100;
-    isDead = false;
-
-    if(enemyInterval) clearInterval(enemyInterval);
-    enemyInterval = setInterval(enemyAttack, 2000);
-  }
-
-  function updateHealthBar() {
-    const fill = document.getElementById('healthFill');
-    fill.style.width = playerHealth + '%';
-    if (playerHealth > 60) fill.style.background = 'limegreen';
-    else if (playerHealth > 30) fill.style.background = 'orange';
-    else fill.style.background = 'red';
-  }
-
-  function enemyAttack() {
-    if(isDead) return;
-    let damage = Math.floor(Math.random() * 15) + 5;
-    playerHealth -= damage;
-    updateHealthBar();
-    document.getElementById('info').textContent = `${texts[selectedLang].messages[selectedCharacter]} - Düşman sana ${damage} hasar verdi!`;
-
-    if(playerHealth <= 0) {
-      playerDead();
-    }
-  }
-
-  function playerDead() {
-    isDead = true;
-    document.getElementById('overlay').style.display = 'flex';
-    deathSound.play();
-  }
-
-  document.getElementById('attackBtn').addEventListener('click', () => {
-    if(isDead) return;
-
-    shootSound.currentTime = 0;
-    shootSound.play();
-
-    let damage = Math.floor(Math.random() * 25) + 10;
-    enemyHealth -= damage;
-    document.getElementById('info').textContent = `${texts[selectedLang].messages[selectedCharacter]} - Düşmana ${damage} hasar verdin!`;
-
-    if(enemyHealth <= 0) {
-      alert("Düşman öldü! Tebrikler!");
-      enemyHealth = 100;
-      playerHealth = 100;
-      updateHealthBar();
-    }
-  });
-
-  function restart() {
-    isDead = false;
-    playerHealth = 100;
-    enemyHealth = 100;
-    updateHealthBar();
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'none';
-    document.getElementById('languageSelection').style.display = 'block';
-    document.getElementById('info').textContent = '';
-    document.getElementById('title').textContent = texts['tr'].title;
-  }
-</script>
-
-</body>
-</html>
+  function select
