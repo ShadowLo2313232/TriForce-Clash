@@ -3,11 +3,41 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Basit Dil ve Karakter Seçme</title>
+<title>Basit Savaş Oyunu</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#222; color:#eee; text-align:center; padding: 20px; }
-  #gameScreen { display:none; margin-top: 30px; }
-  button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+  body {
+    margin: 0; background: #111; color: white; font-family: Arial, sans-serif; text-align:center;
+    user-select: none;
+  }
+  #overlay {
+    position: fixed; top:0; left:0; width:100vw; height:100vh; background:#000;
+    display: flex; justify-content:center; align-items:center; font-size: 60px;
+    z-index: 1000; color: red; display:none;
+  }
+  #gameArea {
+    margin-top: 20px;
+  }
+  #languageSelection, #characterSelection, #gameScreen {
+    margin-top: 20px;
+  }
+  button {
+    font-size: 18px; margin: 8px; padding: 10px 20px; cursor:pointer;
+  }
+  #info {
+    margin-top: 15px; font-size: 18px; min-height: 24px;
+  }
+  #healthBar {
+    width: 300px; height: 25px; background: red; margin: 10px auto;
+    border-radius: 5px; overflow: hidden;
+  }
+  #healthFill {
+    height: 100%; background: limegreen; width: 100%;
+  }
+  #enemy {
+    width: 50px; height: 50px; background: crimson; margin: 20px auto;
+    border-radius: 10px;
+    position: relative;
+  }
 </style>
 </head>
 <body>
@@ -27,11 +57,19 @@
   <button onclick="selectCharacter('Ahmet')">Ahmet</button>
 </div>
 
-<div id="gameScreen">
+<div id="gameScreen" style="display:none;">
   <h2 id="welcomeText"></h2>
-  <p id="gameMessage"></p>
-  <button onclick="restart()">Yeniden Başlat / Restart</button>
+  <div id="healthBar"><div id="healthFill"></div></div>
+  <div id="enemy"></div>
+  <button id="attackBtn">Ateş Et / Shoot</button>
+  <div id="info"></div>
+  <button onclick="restart()" style="margin-top:20px;">Yeniden Başlat / Restart</button>
 </div>
+
+<div id="overlay">ÖLDÜN</div>
+
+<audio id="shootSound" src="https://actions.google.com/sounds/v1/weapons/gunshot_1.mp3"></audio>
+<audio id="deathSound" src="https://actions.google.com/sounds/v1/human_voices/human_death_breathing.ogg"></audio>
 
 <script>
   const texts = {
@@ -44,6 +82,8 @@
         Cem: "Vay yara bandı düşmanı!",
         Ahmet: "Düşmanları top yapcam!"
       },
+      attackBtn: "Ateş Et",
+      diedText: "ÖLDÜN",
       restart: "Yeniden Başlat"
     },
     en: {
@@ -55,6 +95,8 @@
         Cem: "Wow, bandage enemy!",
         Ahmet: "I'm gonna ball the enemies!"
       },
+      attackBtn: "Shoot",
+      diedText: "YOU DIED",
       restart: "Restart"
     },
     es: {
@@ -66,19 +108,27 @@
         Cem: "¡Vaya enemigo con vendaje!",
         Ahmet: "¡Voy a convertir a los enemigos en bolas!"
       },
+      attackBtn: "Disparar",
+      diedText: "MORISTE",
       restart: "Reiniciar"
     }
   };
 
   let selectedLang = null;
   let selectedCharacter = null;
+  let playerHealth = 100;
+  let enemyHealth = 100;
+  let enemyInterval = null;
+  let isDead = false;
+
+  const shootSound = document.getElementById('shootSound');
+  const deathSound = document.getElementById('deathSound');
 
   function selectLanguage(lang) {
     selectedLang = lang;
     document.getElementById('title').textContent = texts[lang].title;
     document.getElementById('languageSelection').style.display = 'none';
 
-    // Karakter seçimini göster
     document.getElementById('characterSelection').style.display = 'block';
     document.getElementById('chooseCharacterTitle').textContent = texts[lang].chooseCharacter;
   }
@@ -86,30 +136,76 @@
   function selectCharacter(name) {
     selectedCharacter = name;
 
-    // Karakter seçimini gizle, oyun ekranını göster
     document.getElementById('characterSelection').style.display = 'none';
     document.getElementById('gameScreen').style.display = 'block';
 
-    // Hoşgeldin yazısı
     document.getElementById('welcomeText').textContent = texts[selectedLang].welcome(name);
+    document.getElementById('attackBtn').textContent = texts[selectedLang].attackBtn;
+    document.getElementById('info').textContent = texts[selectedLang].messages[name];
+    updateHealthBar();
 
-    // Karaktere özel mesaj
-    document.getElementById('gameMessage').textContent = texts[selectedLang].messages[name];
+    enemyHealth = 100;
+    playerHealth = 100;
+    isDead = false;
 
-    // Restart buton yazısı
-    document.querySelector('#gameScreen button').textContent = texts[selectedLang].restart;
+    if(enemyInterval) clearInterval(enemyInterval);
+    enemyInterval = setInterval(enemyAttack, 2000);
   }
 
+  function updateHealthBar() {
+    const fill = document.getElementById('healthFill');
+    fill.style.width = playerHealth + '%';
+    if (playerHealth > 60) fill.style.background = 'limegreen';
+    else if (playerHealth > 30) fill.style.background = 'orange';
+    else fill.style.background = 'red';
+  }
+
+  function enemyAttack() {
+    if(isDead) return;
+    let damage = Math.floor(Math.random() * 15) + 5;
+    playerHealth -= damage;
+    updateHealthBar();
+    document.getElementById('info').textContent = `${texts[selectedLang].messages[selectedCharacter]} - Düşman sana ${damage} hasar verdi!`;
+
+    if(playerHealth <= 0) {
+      playerDead();
+    }
+  }
+
+  function playerDead() {
+    isDead = true;
+    document.getElementById('overlay').style.display = 'flex';
+    deathSound.play();
+  }
+
+  document.getElementById('attackBtn').addEventListener('click', () => {
+    if(isDead) return;
+
+    shootSound.currentTime = 0;
+    shootSound.play();
+
+    let damage = Math.floor(Math.random() * 25) + 10;
+    enemyHealth -= damage;
+    document.getElementById('info').textContent = `${texts[selectedLang].messages[selectedCharacter]} - Düşmana ${damage} hasar verdin!`;
+
+    if(enemyHealth <= 0) {
+      alert("Düşman öldü! Tebrikler!");
+      enemyHealth = 100;
+      playerHealth = 100;
+      updateHealthBar();
+    }
+  });
+
   function restart() {
-    // Her şeyi başa al
-    selectedLang = null;
-    selectedCharacter = null;
-
+    isDead = false;
+    playerHealth = 100;
+    enemyHealth = 100;
+    updateHealthBar();
+    document.getElementById('overlay').style.display = 'none';
     document.getElementById('gameScreen').style.display = 'none';
-    document.getElementById('characterSelection').style.display = 'none';
     document.getElementById('languageSelection').style.display = 'block';
-
-    document.getElementById('title').textContent = "Dil Seçiniz / Select Language";
+    document.getElementById('info').textContent = '';
+    document.getElementById('title').textContent = texts['tr'].title;
   }
 </script>
 
